@@ -48,3 +48,17 @@ bool touchRead(uint16_t *x, uint16_t *y) {
   *y = sy / 4;
   return true;
 }
+
+static int _xMin = 200, _xMax = 3800, _yMin = 200, _yMax = 3800;
+
+void touchSetCalibration(int xMin, int xMax, int yMin, int yMax) {
+  _xMin = xMin; _xMax = xMax; _yMin = yMin; _yMax = yMax;
+}
+
+bool touchReadMapped(Point &p) {
+  uint16_t rx, ry;
+  if (!touchRead(&rx, &ry)) return false;
+  p.x = constrain((int)map(rx, _xMin, _xMax, 0, 320), 0, 319);
+  p.y = constrain((int)map(ry, _yMin, _yMax, 0, 240), 0, 239);
+  return true;
+}
