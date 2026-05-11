@@ -13,77 +13,142 @@ bool     popupActive = false;
 
 // ── Calibration ───────────────────────────────────────────────────────────────
 
+static const int CAL_VER = 4;
+
 static void drawCrosshair(TFT_eSPI &tft, int x, int y) {
   tft.drawLine(x - 20, y, x + 20, y, TFT_RED);
   tft.drawLine(x, y - 20, x, y + 20, TFT_RED);
   tft.fillCircle(x, y, 4, TFT_RED);
 }
 
-static void calWaitRelease() {
-  while (digitalRead(TP_IRQ) == LOW) delay(10);
-  delay(100);
-}
+// Reads while the finger is held down; returns false if lifted too fast or timeout.
+static bool calWaitTouch(uint16_t &outRx, uint16_t &outRy) {
+  uint32_t deadline = millis() + 15000;
+  while (digitalRead(TP_IRQ) != LOW) {
+    if (millis() > deadline) return false;
+    delay(10);
+  }
+  delay(60); // debounce
 
-static void calWaitTouch(uint16_t &outRx, uint16_t &outRy) {
-  while (digitalRead(TP_IRQ) != LOW) delay(10);
-  delay(50);
-  uint32_t sx = 0, sy = 0; int n = 0;
-  for (int i = 0; i < 8; i++) {
+  uint32_t sx = 0, sy = 0;
+  int n = 0;
+  while (digitalRead(TP_IRQ) == LOW) {
     uint16_t rx, ry;
     if (touchRead(&rx, &ry)) { sx += rx; sy += ry; n++; }
     delay(20);
   }
-  if (n > 0) { outRx = sx / n; outRy = sy / n; }
+  delay(100); // clean release
+
+  if (n < 3) return false; // finger lifted too fast
+  outRx = sx / n;
+  outRy = sy / n;
+  Serial.printf("[CAL] raw rx=%u ry=%u (n=%d)\n", outRx, outRy, n);
+  return true;
 }
 
 static void runCalibration() {
   TFT_eSPI &tft = ui.tft();
-  struct { int sx, sy; uint16_t rx, ry; } pts[2] = {
-    {20,  20,  0, 0},
-    {300, 220, 0, 0}
-  };
 
-  for (int i = 0; i < 2; i++) {
+  // 5 points: 4 corners (clockwise from TL) + center
+  // TL(0)→TR(1) = horizontal move  → axis detection
+  // TL(0)+BL(3) = left edge average, TR(1)+BR(2) = right edge average → X calibration
+  // TL(0)+TR(1) = top edge average,  BR(2)+BL(3) = bottom edge average → Y calibration
+  // C(4) = independent verification
+  static const struct { int sx, sy; const char *label; } T[5] = {
+    { 20,  20,  "Alto SX"  },
+    {300,  20,  "Alto DX"  },
+    {300, 220,  "Basso DX" },
+    { 20, 220,  "Basso SX" },
+    {160, 120,  "Centro"   },
+  };
+  uint16_t rx[5] = {}, ry[5] = {};
+
+  for (int i = 0; i < 5; ) {
     tft.fillScreen(C_BG);
     tft.setTextColor(C_WHITE, C_BG);
     tft.setTextDatum(MC_DATUM);
     tft.setTextSize(2);
-    tft.drawString("Calibrazione touch", 160, 100);
+    tft.drawString("Calibrazione touch", 160, 110);
     tft.setTextSize(1);
-    char buf[20];
-    snprintf(buf, 20, "Tocca il punto %d/2", i + 1);
-    tft.drawString(buf, 160, 125);
-    drawCrosshair(tft, pts[i].sx, pts[i].sy);
+    char buf[24];
+    snprintf(buf, 24, "%d/5  %s", i + 1, T[i].label);
+    tft.drawString(buf, 160, 135);
+    drawCrosshair(tft, T[i].sx, T[i].sy);
 
-    calWaitTouch(pts[i].rx, pts[i].ry);
-    tft.fillCircle(pts[i].sx, pts[i].sy, 10, C_GREEN);
+    if (!calWaitTouch(rx[i], ry[i])) {
+      tft.setTextColor(C_RED, C_BG);
+      tft.drawString("Tieni il dito fermo - riprova", 160, 160);
+      delay(1500);
+      continue;
+    }
+    tft.fillCircle(T[i].sx, T[i].sy, 10, C_GREEN);
     delay(400);
-    calWaitRelease();
+    i++;
   }
 
-  // Extrapolate xMin/xMax so that map(rx, xMin, xMax, 0, 320) = sx
-  float kx = (float)(pts[1].rx - pts[0].rx) / (pts[1].sx - pts[0].sx);
-  int xMin = (int)(pts[0].rx - pts[0].sx * kx);
-  int xMax = (int)(xMin + 320 * kx);
+  // TL→TR: horizontal move → whichever sensor axis varies more IS screen X
+  int dRx_h = abs((int)rx[1] - (int)rx[0]);
+  int dRy_h = abs((int)ry[1] - (int)ry[0]);
+  bool swapAxes = dRy_h > dRx_h;
+  Serial.printf("[CAL] dRx_h=%d dRy_h=%d swap=%d\n", dRx_h, dRy_h, swapAxes);
 
-  float ky = (float)(pts[1].ry - pts[0].ry) / (pts[1].sy - pts[0].sy);
-  int yMin = (int)(pts[0].ry - pts[0].sy * ky);
+  uint16_t *xS = swapAxes ? ry : rx;
+  uint16_t *yS = swapAxes ? rx : ry;
+
+  // Average opposite corners for each edge → more robust than a single point
+  float leftRaw   = ((int)xS[0] + (int)xS[3]) / 2.0f;  // TL + BL  → screen x=20
+  float rightRaw  = ((int)xS[1] + (int)xS[2]) / 2.0f;  // TR + BR  → screen x=300
+  float topRaw    = ((int)yS[0] + (int)yS[1]) / 2.0f;  // TL + TR  → screen y=20
+  float bottomRaw = ((int)yS[2] + (int)yS[3]) / 2.0f;  // BR + BL  → screen y=220
+
+  float kx = (rightRaw - leftRaw)  / (300 - 20);
+  float ky = (bottomRaw - topRaw)  / (220 - 20);
+
+  if (fabsf(kx) < 0.5f || fabsf(ky) < 0.5f) {
+    tft.fillScreen(C_BG);
+    tft.setTextColor(C_RED, C_BG);
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextSize(1);
+    tft.drawString("Dati non validi - riprova", 160, 120);
+    Serial.printf("[CAL] INVALID kx=%.2f ky=%.2f\n", kx, ky);
+    delay(2000);
+    runCalibration();
+    return;
+  }
+
+  int xMin = (int)(leftRaw  - 20 * kx);
+  int xMax = (int)(xMin + 320 * kx);
+  int yMin = (int)(topRaw   - 20 * ky);
   int yMax = (int)(yMin + 240 * ky);
 
-  touchSetCalibration(xMin, xMax, yMin, yMax);
+  // Center verification (independent point, not used in fit)
+  float cx = (xS[4] - xMin) * 320.0f / (xMax - xMin);
+  float cy = (yS[4] - yMin) * 240.0f / (yMax - yMin);
+  Serial.printf("[CAL] swap=%d xMin=%d xMax=%d yMin=%d yMax=%d\n", swapAxes, xMin, xMax, yMin, yMax);
+  Serial.printf("[CAL] center: got(%.0f,%.0f) expected(160,120) err(%.0f,%.0f)\n",
+                cx, cy, cx - 160.0f, cy - 120.0f);
+
+  touchSetCalibration(xMin, xMax, yMin, yMax, swapAxes);
 
   Preferences prefs;
   prefs.begin("touch_cal", false);
-  prefs.putInt("xMin", xMin); prefs.putInt("xMax", xMax);
-  prefs.putInt("yMin", yMin); prefs.putInt("yMax", yMax);
+  prefs.putInt("xMin", xMin);  prefs.putInt("xMax", xMax);
+  prefs.putInt("yMin", yMin);  prefs.putInt("yMax", yMax);
+  prefs.putBool("swap", swapAxes);
+  prefs.putInt("ver",  CAL_VER);
   prefs.end();
 
   tft.fillScreen(C_BG);
   tft.setTextColor(C_GREEN, C_BG);
   tft.setTextDatum(MC_DATUM);
   tft.setTextSize(2);
-  tft.drawString("Calibrazione OK!", 160, 120);
-  delay(1200);
+  tft.drawString("Calibrazione OK!", 160, 112);
+  tft.setTextSize(1);
+  tft.setTextColor(C_GRAY, C_BG);
+  char buf[32];
+  snprintf(buf, 32, "errore centro: X%+.0f  Y%+.0f px", cx - 160.0f, cy - 120.0f);
+  tft.drawString(buf, 160, 140);
+  delay(2500);
 }
 
 // ── Hit test ──────────────────────────────────────────────────────────────────
@@ -168,16 +233,17 @@ void setup() {
 
   Preferences prefs;
   prefs.begin("touch_cal", true);
-  if (prefs.isKey("xMin")) {
-    touchSetCalibration(
-      prefs.getInt("xMin", 200), prefs.getInt("xMax", 3800),
-      prefs.getInt("yMin", 200), prefs.getInt("yMax", 3800)
-    );
-    prefs.end();
-  } else {
-    prefs.end();
-    runCalibration();
+  bool validCal = prefs.isKey("xMin") && prefs.getInt("ver", 0) == CAL_VER;
+  if (validCal) {
+    int xMin = prefs.getInt("xMin"), xMax = prefs.getInt("xMax");
+    int yMin = prefs.getInt("yMin"), yMax = prefs.getInt("yMax");
+    bool sw  = prefs.getBool("swap", false);
+    touchSetCalibration(xMin, xMax, yMin, yMax, sw);
+    Serial.printf("[CAL] loaded swap=%d xMin=%d xMax=%d yMin=%d yMax=%d\n",
+                  sw, xMin, xMax, yMin, yMax);
   }
+  prefs.end();
+  if (!validCal) runCalibration();
 
   ui.drawMain(state, true);
 }
