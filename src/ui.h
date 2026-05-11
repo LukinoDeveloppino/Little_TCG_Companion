@@ -32,6 +32,8 @@ public:
   void showPopup(const char *big, const char *label, uint16_t color);
   void hidePopup();
   void updateTimer(uint32_t remaining);
+  void redrawTopBar(const AppState &s);
+  void redrawTimerButtons(const AppState &s);
   TFT_eSPI &tft() { return _tft; }
 
 private:

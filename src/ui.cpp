@@ -71,11 +71,11 @@ void UI::updateTimer(uint32_t remaining) {
   drawTimerDigits(remaining, color);
 }
 
-void UI::drawMain(const AppState &s, bool full) {
-  if (full) _tft.fillScreen(C_BG);
+void UI::redrawTopBar(const AppState &s) {
   drawTopBar(s);
-  updateTimer(s.timerRemaining);
+}
 
+void UI::redrawTimerButtons(const AppState &s) {
   _tft.fillRect(10, 152, 300, 36, C_BG);
   if (s.timerState == TimerState::IDLE) {
     drawButton(10, 152, 300, 36, "Start", C_GREEN, C_WHITE);
@@ -86,7 +86,13 @@ void UI::drawMain(const AppState &s, bool full) {
     drawButton(10,  152, 145, 36, "Start",  C_GREEN, C_WHITE);
     drawButton(165, 152, 145, 36, "Reset",  C_SURFACE, C_WHITE);
   }
+}
 
+void UI::drawMain(const AppState &s, bool full) {
+  if (full) _tft.fillScreen(C_BG);
+  drawTopBar(s);
+  updateTimer(s.timerRemaining);
+  redrawTimerButtons(s);
   drawDivider(194);
   drawButton(10,  198, 145, 36, "Lancia moneta", C_SURFACE, C_YELLOW);
   drawButton(165, 198, 145, 36, "Tira dado D6",  C_SURFACE, C_PURPLE);

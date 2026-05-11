@@ -158,11 +158,13 @@ bool hit(int tx, int ty, int x, int y, int w, int h) {
 }
 
 void handleMain(int tx, int ty) {
-  if (hit(tx,ty,28,4,28,28))  { state.wins[0][0]=!state.wins[0][0]; ui.drawMain(state,true); return; }
-  if (hit(tx,ty,60,4,28,28))  { state.wins[0][1]=!state.wins[0][1]; ui.drawMain(state,true); return; }
-  if (hit(tx,ty,232,4,28,28)) { state.wins[1][0]=!state.wins[1][0]; ui.drawMain(state,true); return; }
-  if (hit(tx,ty,264,4,28,28)) { state.wins[1][1]=!state.wins[1][1]; ui.drawMain(state,true); return; }
+  // Win boxes: only top bar needs updating
+  if (hit(tx,ty,28,4,28,28))  { state.wins[0][0]=!state.wins[0][0]; ui.redrawTopBar(state); return; }
+  if (hit(tx,ty,60,4,28,28))  { state.wins[0][1]=!state.wins[0][1]; ui.redrawTopBar(state); return; }
+  if (hit(tx,ty,232,4,28,28)) { state.wins[1][0]=!state.wins[1][0]; ui.redrawTopBar(state); return; }
+  if (hit(tx,ty,264,4,28,28)) { state.wins[1][1]=!state.wins[1][1]; ui.redrawTopBar(state); return; }
 
+  // Tap on timer area → settings (full screen change)
   if (hit(tx,ty,20,42,280,100) && state.timerState == TimerState::IDLE) {
     state.pickM = state.timerRemaining / 60;
     state.pickS = state.timerRemaining % 60;
@@ -171,20 +173,39 @@ void handleMain(int tx, int ty) {
     return;
   }
 
+  // Timer buttons: only the button row needs updating
   if (state.timerState == TimerState::IDLE) {
     if (hit(tx,ty,10,152,300,36)) {
       gameTimer.start();
       state.timerState = TimerState::RUNNING;
-      ui.drawMain(state, true);
+      ui.redrawTimerButtons(state);
     }
   } else if (state.timerState == TimerState::RUNNING) {
-    if (hit(tx,ty,10,152,145,36))  { gameTimer.pause(); state.timerState = TimerState::PAUSED; ui.drawMain(state,true); }
-    if (hit(tx,ty,165,152,145,36)) { gameTimer.reset(); state.timerState = TimerState::IDLE;
-                                      state.timerRemaining = gameTimer.remaining(); ui.drawMain(state,true); }
-  } else {
-    if (hit(tx,ty,10,152,145,36))  { gameTimer.start(); state.timerState = TimerState::RUNNING; ui.drawMain(state,true); }
-    if (hit(tx,ty,165,152,145,36)) { gameTimer.reset(); state.timerState = TimerState::IDLE;
-                                      state.timerRemaining = gameTimer.remaining(); ui.drawMain(state,true); }
+    if (hit(tx,ty,10,152,145,36)) {
+      gameTimer.pause();
+      state.timerState = TimerState::PAUSED;
+      ui.redrawTimerButtons(state);
+    }
+    if (hit(tx,ty,165,152,145,36)) {
+      gameTimer.reset();
+      state.timerState = TimerState::IDLE;
+      state.timerRemaining = gameTimer.remaining();
+      ui.updateTimer(state.timerRemaining);
+      ui.redrawTimerButtons(state);
+    }
+  } else { // PAUSED
+    if (hit(tx,ty,10,152,145,36)) {
+      gameTimer.start();
+      state.timerState = TimerState::RUNNING;
+      ui.redrawTimerButtons(state);
+    }
+    if (hit(tx,ty,165,152,145,36)) {
+      gameTimer.reset();
+      state.timerState = TimerState::IDLE;
+      state.timerRemaining = gameTimer.remaining();
+      ui.updateTimer(state.timerRemaining);
+      ui.redrawTimerButtons(state);
+    }
   }
 
   if (hit(tx,ty,10,198,145,36)) {
@@ -255,20 +276,24 @@ void loop() {
     if (r != state.timerRemaining) {
       state.timerRemaining = r;
       ui.updateTimer(r);
-      if (r == 0) { state.timerState = TimerState::IDLE; ui.drawMain(state, true); }
+      if (r == 0) {
+        state.timerState = TimerState::IDLE;
+        ui.redrawTimerButtons(state);
+      }
     }
   }
 
   if (popupActive && millis() >= popupHideAt) {
     popupActive = false;
     ui.hidePopup();
-    ui.drawMain(state, true);
+    ui.updateTimer(state.timerRemaining); // restore only the area the popup covered
   }
 
   Point p;
   if (touchReadMapped(p)) {
-    delay(50);
     if (state.screen == Screen::MAIN) handleMain(p.x, p.y);
     else                               handleSettings(p.x, p.y);
+    while (digitalRead(TP_IRQ) == LOW) delay(5); // wait for finger release
+    delay(120);                                    // debounce
   }
 }
