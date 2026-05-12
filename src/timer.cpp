@@ -1,4 +1,4 @@
-#include "timer.h"
+#include "inc/timer.h"
 
 void Timer::begin(uint32_t seconds) {
   _total = seconds;
