@@ -1,15 +1,16 @@
 #pragma once
 #include <TFT_eSPI.h>
 #include "app_state.h"
+#include "touch.h"
 
 class UI {
 public:
   void begin();
 
   // ── Primitivi grafici ─────────────────────────────────────────────────────
-  void drawButton(int x, int y, int w, int h, const char *label,
+  void drawButton(const Rect &r, const char *label,
                   uint16_t bg, uint16_t fg, int radius = 10);
-  void drawWinBox(int x, int y, bool filled, uint16_t color);
+  void drawWinBox(const Rect &r, bool filled, uint16_t color);
   void drawDivider(int y);
 
   // ── Timer display ─────────────────────────────────────────────────────────

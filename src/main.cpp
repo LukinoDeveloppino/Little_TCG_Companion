@@ -77,7 +77,7 @@ void loop() {
       uint16_t    color = C_WHITE;
 
       bool wantsPopup = screenMainHandleTouch(ui, state, gameTimer,
-                                              p.x, p.y,
+                                              p,
                                               &big, &label, &color);
       // Navigazione verso settings (lo screen handler aggiorna state.screen)
       if (state.screen == Screen::SETTINGS) {
@@ -90,7 +90,7 @@ void loop() {
         popupActive = true;
       }
     } else {
-      screenSettingsHandleTouch(ui, state, gameTimer, p.x, p.y);
+      screenSettingsHandleTouch(ui, state, gameTimer, p);
     }
 
     // Attendi rilascio dito + debounce

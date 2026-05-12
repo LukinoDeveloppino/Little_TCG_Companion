@@ -8,22 +8,22 @@ void UI::begin() {
   _tft.fillScreen(C_BG);
 }
 
-void UI::drawButton(int x, int y, int w, int h, const char *label,
+void UI::drawButton(const Rect &r, const char *label,
                     uint16_t bg, uint16_t fg, int radius) {
-  _tft.fillRoundRect(x, y, w, h, radius, bg);
-  _tft.drawRoundRect(x, y, w, h, radius, C_BORDER);
+  _tft.fillRoundRect(r.x, r.y, r.w, r.h, radius, bg);
+  _tft.drawRoundRect(r.x, r.y, r.w, r.h, radius, C_BORDER);
   _tft.setTextColor(fg, bg);
   _tft.setTextDatum(MC_DATUM);
   _tft.setFreeFont(&FreeSans9pt7b);
-  _tft.drawString(label, x + w / 2, y + h / 2);
+  _tft.drawString(label, r.x + r.w / 2, r.y + r.h / 2);
 }
 
-void UI::drawWinBox(int x, int y, bool filled, uint16_t color) {
+void UI::drawWinBox(const Rect &r, bool filled, uint16_t color) {
   if (filled) {
-    _tft.fillRoundRect(x, y, 28, 28, 6, color);
+    _tft.fillRoundRect(r.x, r.y, r.w, r.h, 6, color);
   } else {
-    _tft.fillRoundRect(x, y, 28, 28, 6, C_SURFACE);
-    _tft.drawRoundRect(x, y, 28, 28, 6, C_BORDER);
+    _tft.fillRoundRect(r.x, r.y, r.w, r.h, 6, C_SURFACE);
+    _tft.drawRoundRect(r.x, r.y, r.w, r.h, 6, C_BORDER);
   }
 }
 

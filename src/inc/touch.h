@@ -1,3 +1,4 @@
+#pragma once
 #include <Arduino.h>
 
 #define TP_SCK  25
@@ -7,6 +8,13 @@
 #define TP_IRQ  36
 
 struct Point { int x; int y; };
+
+struct Rect {
+  int x, y, w, h;
+  bool contains(const Point &p) const {
+    return p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h;
+  }
+};
 
 void touchInit();
 uint16_t xptRead(uint8_t cmd);

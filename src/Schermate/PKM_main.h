@@ -12,6 +12,6 @@ void screenMainRedrawButtons(UI &ui, const AppState &s);
 // Modifica state e gameTimer in base al tocco.
 // Ritorna true se è stato attivato un popup (caller gestisce il timer popup).
 bool screenMainHandleTouch(UI &ui, AppState &s, Timer &gameTimer,
-                           int tx, int ty,
+                           Point p,
                            const char **popupBig, const char **popupLabel,
                            uint16_t *popupColor);

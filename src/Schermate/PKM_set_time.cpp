@@ -6,9 +6,14 @@
 
 static const int CAL_VER = 4;
 
-static bool hit(int tx, int ty, int x, int y, int w, int h) {
-  return tx >= x && tx <= x + w && ty >= y && ty <= y + h;
-}
+// ── Layout ────────────────────────────────────────────────────────────────────
+static const Rect BTN_BACK      = {   0,   0,  90,  36 };
+static const Rect BTN_MIN_PLUS  = {  50,  50,  30,  30 };
+static const Rect BTN_MIN_MINUS = { 100,  50,  30,  30 };
+static const Rect BTN_SEC_PLUS  = { 180,  50,  30,  30 };
+static const Rect BTN_SEC_MINUS = { 220,  50,  30,  30 };
+static const Rect BTN_SALVA     = {  95, 158, 130,  36 };
+static const Rect BTN_CALIBRA   = {  70, 202, 180,  34 };
 
 // ── Draw ──────────────────────────────────────────────────────────────────────
 
@@ -31,8 +36,8 @@ void screenSettingsDraw(UI &ui, const AppState &s, bool full) {
 
   // Minuti
   snprintf(buf, 4, "%02d", s.pickM);
-  ui.drawButton(50,  50, 30, 30, "+", C_SURFACE, C_WHITE, 15);
-  ui.drawButton(100, 50, 30, 30, "-", C_SURFACE, C_WHITE, 15);
+  ui.drawButton(BTN_MIN_PLUS,  "+", C_SURFACE, C_WHITE, 15);
+  ui.drawButton(BTN_MIN_MINUS, "-", C_SURFACE, C_WHITE, 15);
   tft.fillRect(50, 86, 80, 44, C_BG);
   tft.setFreeFont(&FreeSans18pt7b);
   tft.setTextColor(C_WHITE, C_BG);
@@ -45,8 +50,8 @@ void screenSettingsDraw(UI &ui, const AppState &s, bool full) {
 
   // Secondi
   snprintf(buf, 4, "%02d", s.pickS);
-  ui.drawButton(180, 50, 30, 30, "+", C_SURFACE, C_WHITE, 15);
-  ui.drawButton(220, 50, 30, 30, "-", C_SURFACE, C_WHITE, 15);
+  ui.drawButton(BTN_SEC_PLUS,  "+", C_SURFACE, C_WHITE, 15);
+  ui.drawButton(BTN_SEC_MINUS, "-", C_SURFACE, C_WHITE, 15);
   tft.fillRect(170, 86, 80, 44, C_BG);
   tft.setTextColor(C_WHITE, C_BG);
   tft.drawString(buf, 210, 112);
@@ -58,9 +63,9 @@ void screenSettingsDraw(UI &ui, const AppState &s, bool full) {
   tft.drawString("min", 90,  148);
   tft.drawString("sec", 210, 148);
 
-  ui.drawButton(95, 158, 130, 36, "Salva", C_GREEN, C_WHITE);
+  ui.drawButton(BTN_SALVA,   "Salva",         C_GREEN,   C_WHITE);
   ui.drawDivider(198);
-  ui.drawButton(70, 202, 180, 34, "Calibra touch", C_SURFACE, C_WHITE);
+  ui.drawButton(BTN_CALIBRA, "Calibra touch", C_SURFACE, C_WHITE);
 }
 
 // ── Calibrazione ─────────────────────────────────────────────────────────────
@@ -192,25 +197,19 @@ void runCalibration(UI &ui) {
 
 // ── Touch ─────────────────────────────────────────────────────────────────────
 
-void screenSettingsHandleTouch(UI &ui, AppState &s, Timer &gameTimer,
-                                int tx, int ty) {
-  // Indietro
-  if (hit(tx,ty,0,0,90,36)) {
+void screenSettingsHandleTouch(UI &ui, AppState &s, Timer &gameTimer, Point p) {
+  if (BTN_BACK.contains(p)) {
     s.screen = Screen::MAIN;
     screenMainDraw(ui, s, true);
     return;
   }
 
-  // Minuti +/-
-  if (hit(tx,ty,50,50,30,30))  { s.pickM = min(99, s.pickM+1);  screenSettingsDraw(ui,s,false); return; }
-  if (hit(tx,ty,100,50,30,30)) { s.pickM = max(0,  s.pickM-1);  screenSettingsDraw(ui,s,false); return; }
+  if (BTN_MIN_PLUS.contains(p))  { s.pickM = min(99, s.pickM+1);  screenSettingsDraw(ui,s,false); return; }
+  if (BTN_MIN_MINUS.contains(p)) { s.pickM = max(0,  s.pickM-1);  screenSettingsDraw(ui,s,false); return; }
+  if (BTN_SEC_PLUS.contains(p))  { s.pickS = min(50, s.pickS+10); screenSettingsDraw(ui,s,false); return; }
+  if (BTN_SEC_MINUS.contains(p)) { s.pickS = max(0,  s.pickS-10); screenSettingsDraw(ui,s,false); return; }
 
-  // Secondi +/-
-  if (hit(tx,ty,180,50,30,30)) { s.pickS = min(50, s.pickS+10); screenSettingsDraw(ui,s,false); return; }
-  if (hit(tx,ty,220,50,30,30)) { s.pickS = max(0,  s.pickS-10); screenSettingsDraw(ui,s,false); return; }
-
-  // Salva
-  if (hit(tx,ty,95,158,130,36)) {
+  if (BTN_SALVA.contains(p)) {
     uint32_t newSec  = s.pickM * 60 + s.pickS;
     s.timerCustom    = newSec;
     s.timerRemaining = newSec;
@@ -220,8 +219,7 @@ void screenSettingsHandleTouch(UI &ui, AppState &s, Timer &gameTimer,
     return;
   }
 
-  // Calibra touch
-  if (hit(tx,ty,70,202,180,34)) {
+  if (BTN_CALIBRA.contains(p)) {
     runCalibration(ui);
     screenSettingsDraw(ui, s, true);
   }
