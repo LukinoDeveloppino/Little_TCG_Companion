@@ -14,6 +14,8 @@
 #define C_RED     0xFA28
 #define C_PURPLE  0xBDF6
 
+static const int CAL_VER = 4;
+
 // ── Enumerazioni ──────────────────────────────────────────────────────────────
 enum class Screen     { MAIN, SETTINGS };
 enum class TimerState { IDLE, RUNNING, PAUSED };
@@ -24,6 +26,5 @@ struct AppState {
   TimerState timerState     = TimerState::IDLE;
   bool       wins[2][2]     = {};
   uint32_t   timerRemaining = 3000;
-  uint32_t   timerCustom    = 3000;
   int        pickM = 50, pickS = 0;
 };

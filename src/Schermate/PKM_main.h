@@ -5,13 +5,10 @@
 
 // ── Draw ──────────────────────────────────────────────────────────────────────
 void screenMainDraw(UI &ui, const AppState &s, bool full = false);
-void screenMainRedrawTopBar(UI &ui, const AppState &s);
 void screenMainRedrawButtons(UI &ui, const AppState &s);
 
 // ── Touch handler ─────────────────────────────────────────────────────────────
-// Modifica state e gameTimer in base al tocco.
-// Ritorna true se è stato attivato un popup (caller gestisce il timer popup).
 bool screenMainHandleTouch(UI &ui, AppState &s, Timer &gameTimer,
                            Point p,
-                           const char **popupBig, const char **popupLabel,
+                           const char **popupBig,
                            uint16_t *popupColor);

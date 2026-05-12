@@ -4,8 +4,6 @@
 #include <Preferences.h>
 #include <Arduino.h>
 
-static const int CAL_VER = 4;
-
 // ── Layout ────────────────────────────────────────────────────────────────────
 static const Rect BTN_BACK      = {   0,   0,  90,  36 };
 static const Rect BTN_MIN_PLUS  = {  50,  50,  30,  30 };
@@ -211,7 +209,6 @@ void screenSettingsHandleTouch(UI &ui, AppState &s, Timer &gameTimer, Point p) {
 
   if (BTN_SALVA.contains(p)) {
     uint32_t newSec  = s.pickM * 60 + s.pickS;
-    s.timerCustom    = newSec;
     s.timerRemaining = newSec;
     gameTimer.begin(newSec);
     s.screen = Screen::MAIN;

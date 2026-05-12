@@ -12,11 +12,6 @@ UI       ui;
 Timer    gameTimer;
 AppState state;
 
-uint32_t popupHideAt = 0;
-bool     popupActive = false;
-
-static const int CAL_VER = 4;
-
 // ── Setup ─────────────────────────────────────────────────────────────────────
 void setup() {
   Serial.begin(115200);
@@ -27,7 +22,6 @@ void setup() {
   ui.begin();
   touchInit();
 
-  // Carica calibrazione salvata (o avvia wizard)
   Preferences prefs;
   prefs.begin("touch_cal", true);
   bool validCal = prefs.isKey("xMin") && prefs.getInt("ver", 0) == CAL_VER;
@@ -48,6 +42,8 @@ void setup() {
 
 // ── Loop ──────────────────────────────────────────────────────────────────────
 void loop() {
+  static uint32_t popupHideAt = 0;
+
   // Aggiorna timer
   gameTimer.update();
   if (state.timerState == TimerState::RUNNING) {
@@ -63,37 +59,32 @@ void loop() {
   }
 
   // Nasconde popup scaduto
-  if (popupActive && millis() >= popupHideAt) {
-    popupActive = false;
+  if (popupHideAt && millis() >= popupHideAt) {
+    popupHideAt = 0;
     ui.hidePopup();
-    ui.updateTimer(state.timerRemaining); // ripristina l'area coperta dal popup
+    ui.updateTimer(state.timerRemaining);
   }
 
   // Gestione touch
   Point p;
   if (touchReadMapped(p)) {
     if (state.screen == Screen::MAIN) {
-      const char *big = nullptr, *label = nullptr;
+      const char *big = nullptr;
       uint16_t    color = C_WHITE;
 
-      bool wantsPopup = screenMainHandleTouch(ui, state, gameTimer,
-                                              p,
-                                              &big, &label, &color);
-      // Navigazione verso settings (lo screen handler aggiorna state.screen)
-      if (state.screen == Screen::SETTINGS) {
+      bool wantsPopup = screenMainHandleTouch(ui, state, gameTimer, p, &big, &color);
+
+      if (state.screen == Screen::SETTINGS)
         screenSettingsDraw(ui, state, true);
-      }
 
       if (wantsPopup && big) {
         ui.showPopup(big, color);
         popupHideAt = millis() + 2200;
-        popupActive = true;
       }
     } else {
       screenSettingsHandleTouch(ui, state, gameTimer, p);
     }
 
-    // Attendi rilascio dito + debounce
     while (digitalRead(TP_IRQ) == LOW) delay(5);
     delay(120);
   }

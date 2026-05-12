@@ -11,7 +11,7 @@ void touchInit() {
   pinMode(TP_IRQ,  INPUT);
 }
 
-uint16_t xptRead(uint8_t cmd) {
+static uint16_t xptRead(uint8_t cmd) {
   uint16_t result = 0;
   digitalWrite(TP_CS, LOW);
   delayMicroseconds(1);

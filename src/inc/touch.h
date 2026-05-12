@@ -17,7 +17,6 @@ struct Rect {
 };
 
 void touchInit();
-uint16_t xptRead(uint8_t cmd);
 bool touchRead(uint16_t *x, uint16_t *y);
 bool touchReadMapped(Point &p);
 void touchSetCalibration(int xMin, int xMax, int yMin, int yMax, bool swapAxes = false);

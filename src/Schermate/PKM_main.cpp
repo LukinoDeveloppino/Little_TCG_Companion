@@ -2,16 +2,16 @@
 #include <Arduino.h>
 
 // ── Layout ────────────────────────────────────────────────────────────────────
-static const Rect WIN_J1A      = {  28,   4,  28,  28 };
-static const Rect WIN_J1B      = {  60,   4,  28,  28 };
-static const Rect WIN_J2A      = { 232,   4,  28,  28 };
-static const Rect WIN_J2B      = { 264,   4,  28,  28 };
-static const Rect ZONE_TIMER   = {  20,  42, 280, 100 };
-static const Rect BTN_TIMER_FULL  = {  10, 152, 300,  36 }; // Start (IDLE)
-static const Rect BTN_TIMER_LEFT  = {  10, 152, 145,  36 }; // Pausa / Resume
-static const Rect BTN_TIMER_RIGHT = { 165, 152, 145,  36 }; // Reset
-static const Rect BTN_COIN     = {  10, 198, 145,  36 };
-static const Rect BTN_DICE     = { 165, 198, 145,  36 };
+static const Rect WIN_J1A         = {  28,   4,  28,  28 };
+static const Rect WIN_J1B         = {  60,   4,  28,  28 };
+static const Rect WIN_J2A         = { 232,   4,  28,  28 };
+static const Rect WIN_J2B         = { 264,   4,  28,  28 };
+static const Rect ZONE_TIMER      = {  20,  42, 280, 100 };
+static const Rect BTN_TIMER_FULL  = {  10, 152, 300,  36 };
+static const Rect BTN_TIMER_LEFT  = {  10, 152, 145,  36 };
+static const Rect BTN_TIMER_RIGHT = { 165, 152, 145,  36 };
+static const Rect BTN_COIN        = {  10, 198, 145,  36 };
+static const Rect BTN_DICE        = { 165, 198, 145,  36 };
 
 // ── TOP BAR ───────────────────────────────────────────────────────────────────
 static void drawTopBar(UI &ui, const AppState &s) {
@@ -61,29 +61,24 @@ void screenMainDraw(UI &ui, const AppState &s, bool full) {
   ui.drawButton(BTN_DICE, "Tira dado D6",  C_SURFACE, C_PURPLE);
 }
 
-void screenMainRedrawTopBar(UI &ui, const AppState &s) {
-  drawTopBar(ui, s);
-}
-
 void screenMainRedrawButtons(UI &ui, const AppState &s) {
   drawTimerButtons(ui, s);
 }
 
 // ── Touch ─────────────────────────────────────────────────────────────────────
 
-static char s_popupLabel[16];
-static const char *s_coinBig[2]  = { "CROCE", "TESTA" };
+static const char *s_coinFaces[] = { "CROCE", "TESTA" };
 static const char *s_diceFaces[] = { "", "1", "2", "3", "4", "5", "6" };
 
 bool screenMainHandleTouch(UI &ui, AppState &s, Timer &gameTimer,
                            Point p,
-                           const char **popupBig, const char **popupLabel,
+                           const char **popupBig,
                            uint16_t *popupColor) {
   // Win boxes
-  if (WIN_J1A.contains(p)) { s.wins[0][0]=!s.wins[0][0]; screenMainRedrawTopBar(ui,s); return false; }
-  if (WIN_J1B.contains(p)) { s.wins[0][1]=!s.wins[0][1]; screenMainRedrawTopBar(ui,s); return false; }
-  if (WIN_J2A.contains(p)) { s.wins[1][0]=!s.wins[1][0]; screenMainRedrawTopBar(ui,s); return false; }
-  if (WIN_J2B.contains(p)) { s.wins[1][1]=!s.wins[1][1]; screenMainRedrawTopBar(ui,s); return false; }
+  if (WIN_J1A.contains(p)) { s.wins[0][0] = !s.wins[0][0]; drawTopBar(ui, s); return false; }
+  if (WIN_J1B.contains(p)) { s.wins[0][1] = !s.wins[0][1]; drawTopBar(ui, s); return false; }
+  if (WIN_J2A.contains(p)) { s.wins[1][0] = !s.wins[1][0]; drawTopBar(ui, s); return false; }
+  if (WIN_J2B.contains(p)) { s.wins[1][1] = !s.wins[1][1]; drawTopBar(ui, s); return false; }
 
   // Timer area → vai alle impostazioni (solo se fermo)
   if (ZONE_TIMER.contains(p) && s.timerState == TimerState::IDLE) {
@@ -93,53 +88,38 @@ bool screenMainHandleTouch(UI &ui, AppState &s, Timer &gameTimer,
     return false;
   }
 
-  if (s.timerState == TimerState::IDLE) {
-    if (BTN_TIMER_FULL.contains(p)) {
-      gameTimer.start();
-      s.timerState = TimerState::RUNNING;
-      screenMainRedrawButtons(ui, s);
-    }
-  } else if (s.timerState == TimerState::RUNNING) {
-    if (BTN_TIMER_LEFT.contains(p)) {
-      gameTimer.pause();
-      s.timerState = TimerState::PAUSED;
-      screenMainRedrawButtons(ui, s);
-    }
-    if (BTN_TIMER_RIGHT.contains(p)) {
-      gameTimer.reset();
-      s.timerState     = TimerState::IDLE;
-      s.timerRemaining = gameTimer.remaining();
-      ui.updateTimer(s.timerRemaining);
-      screenMainRedrawButtons(ui, s);
-    }
-  } else {
-    if (BTN_TIMER_LEFT.contains(p)) {
-      gameTimer.start();
-      s.timerState = TimerState::RUNNING;
-      screenMainRedrawButtons(ui, s);
-    }
-    if (BTN_TIMER_RIGHT.contains(p)) {
-      gameTimer.reset();
-      s.timerState     = TimerState::IDLE;
-      s.timerRemaining = gameTimer.remaining();
-      ui.updateTimer(s.timerRemaining);
-      screenMainRedrawButtons(ui, s);
-    }
+  // Reset (valido in RUNNING e PAUSED)
+  if (s.timerState != TimerState::IDLE && BTN_TIMER_RIGHT.contains(p)) {
+    gameTimer.reset();
+    s.timerState     = TimerState::IDLE;
+    s.timerRemaining = gameTimer.remaining();
+    ui.updateTimer(s.timerRemaining);
+    screenMainRedrawButtons(ui, s);
+  }
+  // Start / Resume
+  else if ((s.timerState == TimerState::IDLE   && BTN_TIMER_FULL.contains(p)) ||
+           (s.timerState == TimerState::PAUSED && BTN_TIMER_LEFT.contains(p))) {
+    gameTimer.start();
+    s.timerState = TimerState::RUNNING;
+    screenMainRedrawButtons(ui, s);
+  }
+  // Pausa
+  else if (s.timerState == TimerState::RUNNING && BTN_TIMER_LEFT.contains(p)) {
+    gameTimer.pause();
+    s.timerState = TimerState::PAUSED;
+    screenMainRedrawButtons(ui, s);
   }
 
   // Lancia moneta
   if (BTN_COIN.contains(p)) {
-    *popupBig   = s_coinBig[random(2)];
+    *popupBig   = s_coinFaces[random(2)];
     *popupColor = C_YELLOW;
     return true;
   }
 
   // Tira dado D6
   if (BTN_DICE.contains(p)) {
-    int r = random(1, 7);
-    snprintf(s_popupLabel, sizeof(s_popupLabel), "DADO · %d", r);
-    *popupBig   = s_diceFaces[r];
-    *popupLabel = s_popupLabel;
+    *popupBig   = s_diceFaces[random(1, 7)];
     *popupColor = C_PURPLE;
     return true;
   }
