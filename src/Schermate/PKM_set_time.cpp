@@ -5,13 +5,14 @@
 #include <Arduino.h>
 
 // ── Layout ────────────────────────────────────────────────────────────────────
+// Minuti centrati a x=90, Secondi centrati a x=230 (simmetrici rispetto a x=160)
 static const Rect BTN_BACK      = {   0,   0,  90,  36 };
-static const Rect BTN_MIN_PLUS  = {  50,  50,  30,  30 };
-static const Rect BTN_MIN_MINUS = { 100,  50,  30,  30 };
-static const Rect BTN_SEC_PLUS  = { 180,  50,  30,  30 };
-static const Rect BTN_SEC_MINUS = { 220,  50,  30,  30 };
-static const Rect BTN_SALVA     = {  95, 158, 130,  36 };
-static const Rect BTN_CALIBRA   = {  70, 202, 180,  34 };
+static const Rect BTN_MIN_PLUS  = {  43,  44,  44,  44 };
+static const Rect BTN_MIN_MINUS = {  93,  44,  44,  44 };
+static const Rect BTN_SEC_PLUS  = { 183,  44,  44,  44 };
+static const Rect BTN_SEC_MINUS = { 233,  44,  44,  44 };
+static const Rect BTN_SALVA     = {  95, 162, 130,  36 };
+static const Rect BTN_CALIBRA   = {  70, 206, 180,  30 };
 
 // ── Draw ──────────────────────────────────────────────────────────────────────
 
@@ -34,35 +35,36 @@ void screenSettingsDraw(UI &ui, const AppState &s, bool full) {
 
   // Minuti
   snprintf(buf, 4, "%02d", s.pickM);
-  ui.drawButton(BTN_MIN_PLUS,  "+", C_SURFACE, C_WHITE, 15);
-  ui.drawButton(BTN_MIN_MINUS, "-", C_SURFACE, C_WHITE, 15);
-  tft.fillRect(50, 86, 80, 44, C_BG);
+  ui.drawButton(BTN_MIN_PLUS,  "+", C_SURFACE, C_WHITE, 22);
+  ui.drawButton(BTN_MIN_MINUS, "-", C_SURFACE, C_WHITE, 22);
+  tft.fillRect(43, 92, 94, 44, C_BG);
   tft.setFreeFont(&FreeSans18pt7b);
   tft.setTextColor(C_WHITE, C_BG);
   tft.setTextDatum(MC_DATUM);
-  tft.drawString(buf, 90, 112);
+  tft.drawString(buf, 90, 116);
 
   // Separatore ":"
   tft.setTextColor(C_GRAY, C_BG);
-  tft.drawString(":", 160, 112);
+  tft.drawString(":", 160, 116);
 
-  // Secondi
+  // Secondi — setFreeFont obbligatorio: drawButton l'ha resettato a 9pt
   snprintf(buf, 4, "%02d", s.pickS);
-  ui.drawButton(BTN_SEC_PLUS,  "+", C_SURFACE, C_WHITE, 15);
-  ui.drawButton(BTN_SEC_MINUS, "-", C_SURFACE, C_WHITE, 15);
-  tft.fillRect(170, 86, 80, 44, C_BG);
+  ui.drawButton(BTN_SEC_PLUS,  "+", C_SURFACE, C_WHITE, 22);
+  ui.drawButton(BTN_SEC_MINUS, "-", C_SURFACE, C_WHITE, 22);
+  tft.fillRect(183, 92, 94, 44, C_BG);
+  tft.setFreeFont(&FreeSans18pt7b);
   tft.setTextColor(C_WHITE, C_BG);
-  tft.drawString(buf, 210, 112);
+  tft.drawString(buf, 230, 116);
 
   // Etichette unità
   tft.setFreeFont(&FreeSans9pt7b);
   tft.setTextColor(C_GRAY, C_BG);
   tft.setTextDatum(MC_DATUM);
-  tft.drawString("min", 90,  148);
-  tft.drawString("sec", 210, 148);
+  tft.drawString("min",  90, 148);
+  tft.drawString("sec", 230, 148);
 
   ui.drawButton(BTN_SALVA,   "Salva",         C_GREEN,   C_WHITE);
-  ui.drawDivider(198);
+  ui.drawDivider(202);
   ui.drawButton(BTN_CALIBRA, "Calibra touch", C_SURFACE, C_WHITE);
 }
 
