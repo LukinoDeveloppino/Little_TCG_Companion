@@ -50,7 +50,7 @@ void loop() {
     uint32_t r = gameTimer.remaining();
     if (r != state.timerRemaining) {
       state.timerRemaining = r;
-      ui.updateTimer(r);
+      if (!popupHideAt) ui.updateTimer(r);
       if (r == 0) {
         state.timerState = TimerState::IDLE;
         screenMainRedrawButtons(ui, state);
@@ -63,6 +63,7 @@ void loop() {
     popupHideAt = 0;
     ui.hidePopup();
     ui.updateTimer(state.timerRemaining);
+    screenMainRedrawButtons(ui, state);
   }
 
   // Gestione touch

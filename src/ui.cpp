@@ -61,4 +61,5 @@ void UI::showPopup(const char *big, uint16_t color) {
 void UI::hidePopup() {
   if (!_popupVisible) return;
   _popupVisible = false;
+  _tft.fillRoundRect(85, 70, 150, 100, 20, C_BG);
 }
