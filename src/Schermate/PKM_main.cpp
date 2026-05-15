@@ -22,7 +22,7 @@ static void drawTopBar(UI &ui, const AppState &s) {
 
   tft.setTextColor(C_GREEN, C_BG);
   tft.setTextDatum(ML_DATUM);
-  tft.drawString("J1", 8, 18);
+  tft.drawString("G1", 8, 18);
   ui.drawWinBox(WIN_G1A, s.wins[0][0], C_GREEN);
   ui.drawWinBox(WIN_G1B, s.wins[0][1], C_GREEN);
 
@@ -34,7 +34,7 @@ static void drawTopBar(UI &ui, const AppState &s) {
   ui.drawWinBox(WIN_G2B, s.wins[1][1], C_BLUE);
   tft.setTextColor(C_BLUE, C_BG);
   tft.setTextDatum(MR_DATUM);
-  tft.drawString("J2", 312, 18);
+  tft.drawString("G2", 312, 18);
 }
 
 // ── TIMER + BOTTONI ───────────────────────────────────────────────────────────
