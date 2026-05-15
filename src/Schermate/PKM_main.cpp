@@ -2,10 +2,10 @@
 #include <Arduino.h>
 
 // ── Layout ────────────────────────────────────────────────────────────────────
-static const Rect WIN_J1A         = {  28,   4,  28,  28 };
-static const Rect WIN_J1B         = {  60,   4,  28,  28 };
-static const Rect WIN_J2A         = { 232,   4,  28,  28 };
-static const Rect WIN_J2B         = { 264,   4,  28,  28 };
+static const Rect WIN_G1A         = {  28,   4,  28,  28 };
+static const Rect WIN_G1B         = {  60,   4,  28,  28 };
+static const Rect WIN_G2A         = { 232,   4,  28,  28 };
+static const Rect WIN_G2B         = { 264,   4,  28,  28 };
 static const Rect ZONE_TIMER      = {  20,  42, 280, 100 };
 static const Rect BTN_TIMER_FULL  = {  10, 152, 300,  36 };
 static const Rect BTN_TIMER_LEFT  = {  10, 152, 145,  36 };
@@ -23,15 +23,15 @@ static void drawTopBar(UI &ui, const AppState &s) {
   tft.setTextColor(C_GREEN, C_BG);
   tft.setTextDatum(ML_DATUM);
   tft.drawString("J1", 8, 18);
-  ui.drawWinBox(WIN_J1A, s.wins[0][0], C_GREEN);
-  ui.drawWinBox(WIN_J1B, s.wins[0][1], C_GREEN);
+  ui.drawWinBox(WIN_G1A, s.wins[0][0], C_GREEN);
+  ui.drawWinBox(WIN_G1B, s.wins[0][1], C_GREEN);
 
   tft.setTextColor(C_GRAY, C_BG);
   tft.setTextDatum(MC_DATUM);
   tft.drawString("BO3", 160, 18);
 
-  ui.drawWinBox(WIN_J2A, s.wins[1][0], C_BLUE);
-  ui.drawWinBox(WIN_J2B, s.wins[1][1], C_BLUE);
+  ui.drawWinBox(WIN_G2A, s.wins[1][0], C_BLUE);
+  ui.drawWinBox(WIN_G2B, s.wins[1][1], C_BLUE);
   tft.setTextColor(C_BLUE, C_BG);
   tft.setTextDatum(MR_DATUM);
   tft.drawString("J2", 312, 18);
@@ -75,10 +75,10 @@ bool screenMainHandleTouch(UI &ui, AppState &s, Timer &gameTimer,
                            const char **popupBig,
                            uint16_t *popupColor) {
   // Win boxes
-  if (WIN_J1A.contains(p)) { s.wins[0][0] = !s.wins[0][0]; drawTopBar(ui, s); return false; }
-  if (WIN_J1B.contains(p)) { s.wins[0][1] = !s.wins[0][1]; drawTopBar(ui, s); return false; }
-  if (WIN_J2A.contains(p)) { s.wins[1][0] = !s.wins[1][0]; drawTopBar(ui, s); return false; }
-  if (WIN_J2B.contains(p)) { s.wins[1][1] = !s.wins[1][1]; drawTopBar(ui, s); return false; }
+  if (WIN_G1A.contains(p)) { s.wins[0][0] = !s.wins[0][0]; drawTopBar(ui, s); return false; }
+  if (WIN_G1B.contains(p)) { s.wins[0][1] = !s.wins[0][1]; drawTopBar(ui, s); return false; }
+  if (WIN_G2A.contains(p)) { s.wins[1][0] = !s.wins[1][0]; drawTopBar(ui, s); return false; }
+  if (WIN_G2B.contains(p)) { s.wins[1][1] = !s.wins[1][1]; drawTopBar(ui, s); return false; }
 
   // Timer area → vai alle impostazioni (solo se fermo)
   if (ZONE_TIMER.contains(p) && s.timerState == TimerState::IDLE) {
